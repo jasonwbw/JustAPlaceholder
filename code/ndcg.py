@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+
+import numpy as np
+
 '''
 Created on 2016年7月25日
 @author: lenovo
@@ -11,8 +15,6 @@ http://www.stanford.edu/class/cs276/handouts/EvaluationNew-handout-6-per.pdf
 http://hal.archives-ouvertes.fr/docs/00/72/67/60/PDF/07-busa-fekete.pdf
 Learning to Rank for Information Retrieval (Tie-Yan Liu)
 """
-#coding=utf-8
-import numpy as np
 
 
 def mean_reciprocal_rank(rs):
@@ -205,6 +207,12 @@ def ndcg_at_k(r, k, method=0):
 
 
 if __name__ == "__main__":
-    #import doctest
-    #doctest.testmod()
-    pass
+    # import doctest
+    # doctest.testmod()
+    print ndcg_at_k([5, 4, 3, 2], 4)
+    print ndcg_at_k([1, 1, 0, 0, 0], 3)
+    print ndcg_at_k([1, 1, 0, 0, 0], 2)
+    print ndcg_at_k([1, 0, 1, 0, 0], 2)
+    print ndcg_at_k([1, 0, 1, 0, 0], 3)
+    print ndcg_at_k([1, 0, 1, 0, 0], 4)
+    print ndcg_at_k([1, 0, 1, 0, 0], 5)
