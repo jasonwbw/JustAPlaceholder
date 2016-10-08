@@ -108,9 +108,9 @@ def gradsearch(feature_name='stat'):
                                 params['objective'] = 'reg:logistic'
                                 # params['objective'] = 'rank:pairwise'
                                 # params['objective'] = 'rank:ndcg'
-                                params['eval_metric'] = ['ndcg@5', 'ndcg@10']
+                                params['eval_metric'] = ['ndcg@5-', 'ndcg@10-']
                                 evals = cv('../feature/feature', feature_name, params,
-                                           num_round=1000, early_stopping_rounds=5, kfolder=10)
+                                           num_round=1000, early_stopping_rounds=50, kfolder=10)
                                 # print('%d %d %f %d %f %f %d' % (m1, m2, eta, m3, subsample, colsample_bytree, w))
                                 # print('\n'.join(evals) + '\n\n')
                                 fo.write('%d %d %f %d %f %f %d' % (
@@ -123,18 +123,18 @@ def gradsearch(feature_name='stat'):
 feature_prefix = '../feature/feature'
 # feature_name = 'stat'
 feature_name = 'merge.stat_tags'
-# gradsearch(feature_name=feature_name)
+gradsearch(feature_name=feature_name)
 
 
-params = {'min_child_weight': 1, 'max_depth': 3, 'eta': 0.1,
-          'max_delta_step': 1, 'subsample': 0.7, 'colsample_bytree': 0.7}
-params['scale_pos_weight'] = 1
-params['silent'] = True
-params['objective'] = 'reg:logistic'
-# params['objective'] = 'rank:pairwise'
-# params['objective'] = 'rank:ndcg'
-params['eval_metric'] = ['ndcg@5-', 'ndcg@10-']
-train_f = feature_prefix + '/Folder1/' + feature_name + '.train.xgboost.4rank.txt'
-test_f = feature_prefix + '/' + feature_name + '.test.xgboost.txt'
-bst, dtest = train(train_f, test_f, params, 1000, 50, evaluate=False)
-submit(bst, dtest)
+# params = {'min_child_weight': 1, 'max_depth': 3, 'eta': 0.1,
+#           'max_delta_step': 1, 'subsample': 0.7, 'colsample_bytree': 0.7}
+# params['scale_pos_weight'] = 1
+# params['silent'] = True
+# params['objective'] = 'reg:logistic'
+# # params['objective'] = 'rank:pairwise'
+# # params['objective'] = 'rank:ndcg'
+# params['eval_metric'] = ['ndcg@5-', 'ndcg@10-']
+# train_f = feature_prefix + '/Folder1/' + feature_name + '.train.xgboost.4rank.txt'
+# test_f = feature_prefix + '/' + feature_name + '.test.xgboost.txt'
+# bst, dtest = train(train_f, test_f, params, 1000, 100, evaluate=False)
+# submit(bst, dtest)

@@ -2,15 +2,12 @@
 # 使用../data/stat.py统计的基本数字型特征
 #
 # Feature List:
-# int   - 问题的vote
-# int   - 问题的ans
-# int   - 问题的bestans
-# float - 回答问题的平均vote
-# float - 回答问题的平均ans
-# float - 回答问题的平均bestans
-# float - 不回答问题的平均vote
-# float - 不回答问题的平均ans
-# float - 不回答问题的平均bestans
+# [Query about]
+# 00-02 - 问题的 [vote/ans/bestans]
+# [User about]
+# 03-06 - 回答问题的 [平均/最大/最小/方差] [vote/ans/bestans]
+# 07-10 - 拒绝问题的 [平均/最大/最小/方差] [vote/ans/bestans]
+# 11-12 - 回答率, 已经回答的个数
 
 import os
 
