@@ -83,12 +83,13 @@ def submit(bst, dtest):
 def gradsearch(feature_name='stat'):
     fo = open('gradsearch.%s.rs.txt' % feature_name, 'w')
     min_child_weights = [1, 2, 5]
-    max_depths = [3, 4, 5]
+    max_depths = [2, 3, 4, 5]
     etas = [0.01, 0.05, 0.1]
     max_delta_steps = [0, 1, 5, 10]
     subsamples = [0.5, 0.7, 1]
     colsample_bytrees = [0.5, 0.7, 1]
     scale_pos_weights = [1, 5, 10]
+    best_result = (0, )
     for m1 in min_child_weights:
         for m2 in max_depths:
             for eta in etas:
@@ -111,12 +112,21 @@ def gradsearch(feature_name='stat'):
                                 params['eval_metric'] = ['ndcg@5-', 'ndcg@10-']
                                 evals = cv('../feature/feature', feature_name, params,
                                            num_round=1000, early_stopping_rounds=50, kfolder=10)
-                                # print('%d %d %f %d %f %f %d' % (m1, m2, eta, m3, subsample, colsample_bytree, w))
-                                # print('\n'.join(evals) + '\n\n')
-                                fo.write('%d %d %f %d %f %f %d' % (
+                                metrics = 0.
+                                for eva in evals:
+                                    eva_tmp = eva.split('eval-ndcg@', 2)
+                                    ndcg_at5 = eva_tmp[1].strip().replace('5-:', '')
+                                    ndcg_at10 = eva_tmp[2].strip().replace('10-:', '')
+                                    metrics += (float(ndcg_at5) + float(ndcg_at10)) / 2
+                                metrics /= len(evals)
+                                if metrics > best_result[0]:
+                                    best_result = (metrics, m1, m2, eta, m3, subsample, colsample_bytree, w)
+                                fo.write('%d %d %f %d %f %f %d\n' % (
                                     m1, m2, eta, m3, subsample, colsample_bytree, w))
-                                fo.write('\n'.join(evals) + '\n\n')
+                                fo.write('\n'.join(evals) + '\n')
+                                fo.write('average (ndcg@5 + ndcg@10)/2 %f\n\n' % metrics)
                                 fo.flush()
+    fo.write('the best params and result is\nndcg@5 + ndcg@10)/2 = %f\nparams is %d %d %f %d %f %f %d\n' % best_result)
     fo.close()
 
 
