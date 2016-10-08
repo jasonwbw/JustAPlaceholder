@@ -2,7 +2,7 @@
 
 
 # 统计一下问题的平均vote/ans/bestans，以及相互的比重，并把三个值得dict保存
-def stat1(back=True):
+def question_numerical(back=True):
 	q2vote = {}
 	q2ans = {}
 	q2bestans = {}
@@ -62,9 +62,9 @@ def _stat1_sorted_and_back(dict, filename):
 
 
 # 统计一下专家的，回答问题的平均vote，ans，bestans，不回答问题的平均vote，ans，bestans
-def stat2(back=True):
+def user_numerical(back=True):
 	print 'start counting...'
-	q2vote, q2ans, q2bestans = stat1(back=False)
+	q2vote, q2ans, q2bestans = question_numerical(back=False)
 	# 对每个user记录： 回答个数, vote, ans, bestans, 不回答个数, vote, ans, bestans
 	user2infos = {}
 	with open('./1_reorder/invited_info_train.txt', 'r') as fp:
@@ -87,6 +87,7 @@ def stat2(back=True):
 	print 'start averaging...'
 	zero_ans, zero_ignore = 0, 0
 	for u in user2infos:
+		# 对回答的问题求平均值
 		if user2infos[u][0] != 0:
 			total = float(user2infos[u][0])
 			user2infos[u][1] /= total
@@ -94,6 +95,7 @@ def stat2(back=True):
 			user2infos[u][3] /= total
 		else:
 			zero_ans += 1
+		# 对不回答问题求平均值
 		if user2infos[u][4] != 0:
 			total = float(user2infos[u][4])
 			user2infos[u][5] /= total
@@ -101,15 +103,21 @@ def stat2(back=True):
 			user2infos[u][7] /= total
 		else:
 			zero_ignore += 1
+		# 添加回答率feature
+		if user2infos[u][0] != 0:
+			user2infos[u].append(float(user2infos[u][0]) / (user2infos[u][0] + user2infos[u][4]))
+		else:
+			user2infos[u].append(0)
 	if back:
 		print 'start backup...'
 		sorted_dict = sorted(user2infos.iteritems(), key=lambda d: d[0], reverse=False)
 		last_u = -1
 		with open('./stat/user_info.txt', 'w') as fo:
 			for u, l in sorted_dict:
+				# 有些user没有被推送过信息
 				if u != last_u + 1:
 					for i in xrange(last_u + 1, u):
-						fo.write('%d\t0\t0\t0\t0\t0\t0\t0\t0\n' % i)
+						fo.write('%d\t0\t0\t0\t0\t0\t0\t0\t0\t0\n' % i)
 				fo.write('%d\t%s\n' % (u, '\t'.join(map(str, l))))
 				last_u = u
 	print zero_ans, zero_ignore, len(user2infos)
@@ -125,6 +133,7 @@ def stat2(back=True):
 	print user2infos[637]
 	return user2infos
 
+
 if __name__ == '__main__':
-    stat1()
-    stat2()
+    question_numerical()
+    user_numerical()
