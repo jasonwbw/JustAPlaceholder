@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import config
+
 import numpy as np
 
 
@@ -141,5 +143,5 @@ def user_numerical(back=True, kfolder=-1):
 
 if __name__ == '__main__':
     question_numerical()
-    for i in xrange(-1, 10):
+    for i in xrange(-1, config.kfolder):
     	user_numerical(back=True, kfolder=i)

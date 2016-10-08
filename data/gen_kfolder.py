@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import config
 
 from sklearn.cross_validation import StratifiedKFold
 
@@ -33,4 +34,4 @@ def gen_kfolder(fname, fo_prefix, k=10):
 
 
 if __name__ == '__main__':
-    gen_kfolder('./1_reorder/invited_info_train.txt', './1_reorder/', k=10)
+    gen_kfolder('./1_reorder/invited_info_train.txt', './1_reorder/', k=config.kfolder)
