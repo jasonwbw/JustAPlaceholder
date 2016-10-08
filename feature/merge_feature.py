@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-
+import config
 from itertools import izip
 
 
@@ -49,6 +49,6 @@ def merge_xgboost_feature(file_prefixs, file_merge_prefix):
 if __name__ == '__main__':
 	# merge stat and tags
 	merge_xgboost_feature(['./feature/stat.', './feature/tags.'], './feature/merge.stat_tags.')
-	for i in xrange(10):
+	for i in xrange(config.kfolder):
 		merge_xgboost_feature(['./feature/Folder%d/stat.' % i,
 			'./feature/Folder%d/tags.' % i], './feature/Folder%d/merge.stat_tags.' % i)

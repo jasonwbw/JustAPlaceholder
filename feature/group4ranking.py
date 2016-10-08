@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-
+import config
 from itertools import izip
 
 
@@ -69,5 +69,5 @@ def group_data(featurename, kfolder=-1, filter4rankloss=True):
 if __name__ == '__main__':
     # merge stat and tags
     group_data('merge.stat_tags', filter4rankloss=False)
-    for i in xrange(10):
+    for i in xrange(config.kfolder):
         group_data('merge.stat_tags', kfolder=i, filter4rankloss=False)

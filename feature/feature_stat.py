@@ -10,6 +10,7 @@
 # 11-12 - 回答率, 已经回答的个数
 
 import os
+import config
 
 from feature_abstract import FeatureGenerator
 
@@ -95,5 +96,5 @@ def gen_feature(kfolder=-1):
 
 
 if __name__ == '__main__':
-	for i in xrange(-1, 10):
+	for i in xrange(-1, config.kfolder):
 		gen_feature(i)

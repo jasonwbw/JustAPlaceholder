@@ -7,6 +7,7 @@
 # F - float - sum(q的tag u拒绝过，在所有拒绝中的占比)
 
 import os
+import config
 from feature_abstract import FeatureGenerator
 
 from itertools import izip
@@ -141,5 +142,5 @@ def gen_feature(kfolder=-1):
 
 
 if __name__ == '__main__':
-    for i in xrange(-1, 10):
+    for i in xrange(-1, config.kfolder):
         gen_feature(i)
