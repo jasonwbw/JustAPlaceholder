@@ -43,8 +43,12 @@ def merge_xgboost_feature(file_prefixs, file_merge_prefix):
 			current_features_test, x_test, max_feature_test = load_xgboost_feature_file(file_prefix + 'test.xgboost.txt', max_feature=max_feature_test, current_features=current_features_test)
 	back_xgboost_feature(current_features, labels, file_merge_prefix + 'train.xgboost.txt')
 	back_xgboost_feature(current_features_test, labels_test, file_merge_prefix + 'test.xgboost.txt')
+	print ''
 
 
 if __name__ == '__main__':
 	# merge stat and tags
 	merge_xgboost_feature(['./feature/stat.', './feature/tags.'], './feature/merge.stat_tags.')
+	for i in xrange(10):
+		merge_xgboost_feature(['./feature/Folder%d/stat.' % i,
+			'./feature/Folder%d/tags.' % i], './feature/Folder%d/merge.stat_tags.' % i)

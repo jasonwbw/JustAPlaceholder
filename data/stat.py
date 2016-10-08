@@ -62,12 +62,14 @@ def _stat1_sorted_and_back(dict, filename):
 
 
 # 统计一下专家的，回答问题的平均vote，ans，bestans，不回答问题的平均vote，ans，bestans
-def user_numerical(back=True):
+def user_numerical(back=True, kfolder=-1):
+	trainf = './1_reorder/invited_info_train.txt' if kfolder == -1 else './1_reorder/Folder%d/train.txt' % kfolder
+	backf = './stat/user_info.txt' if kfolder == -1 else './stat/user_info_Folder%d.txt' % kfolder
 	print 'start counting...'
 	q2vote, q2ans, q2bestans = question_numerical(back=False)
 	# 对每个user记录： 回答个数, vote, ans, bestans, 不回答个数, vote, ans, bestans
 	user2infos = {}
-	with open('./1_reorder/invited_info_train.txt', 'r') as fp:
+	with open(trainf, 'r') as fp:
 		for line in fp:
 			q, u, label = map(int, line.strip().split('\t'))
 			if u not in user2infos:
@@ -112,7 +114,7 @@ def user_numerical(back=True):
 		print 'start backup...'
 		sorted_dict = sorted(user2infos.iteritems(), key=lambda d: d[0], reverse=False)
 		last_u = -1
-		with open('./stat/user_info.txt', 'w') as fo:
+		with open(backf, 'w') as fo:
 			for u, l in sorted_dict:
 				# 有些user没有被推送过信息
 				if u != last_u + 1:
@@ -121,19 +123,21 @@ def user_numerical(back=True):
 				fo.write('%d\t%s\n' % (u, '\t'.join(map(str, l))))
 				last_u = u
 	print zero_ans, zero_ignore, len(user2infos)
-	print user2infos[0]
-	print user2infos[1]
-	print user2infos[2]
-	print user2infos[3]
-	print user2infos[4]
-	print user2infos[5]
-	print user2infos[12]
-	print user2infos[223]
-	print user2infos[2354]
-	print user2infos[637]
+	if kfolder == -1:
+		print user2infos[0]
+		print user2infos[1]
+		print user2infos[2]
+		print user2infos[3]
+		print user2infos[4]
+		print user2infos[5]
+		print user2infos[12]
+		print user2infos[223]
+		print user2infos[2354]
+		print user2infos[637]
 	return user2infos
 
 
 if __name__ == '__main__':
     question_numerical()
-    user_numerical()
+    for i in xrange(-1, 10):
+    	user_numerical(back=True, kfolder=i)

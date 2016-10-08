@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 # 使用tag matching的信息
+#
+# Feature List:
+# 0/1   - q/u是否有完全match的tag
+# float - sum（q的tag u回答过，在所有回答中的占比）
+# float - sum(q的tag u拒绝过，在所有拒绝中的占比)
 
-
+import os
 from feature_abstract import FeatureGenerator
 
 data_folder = '../data/'
@@ -26,14 +31,18 @@ def load_tags():
 	return qtags, utags
 
 
-def user2ans_tag(qtags, utags):
+def user2ans_tag(qtags, utags, kfolder=-1):
 	print 'compute tag rate in uset\'s answered and rejected question'
 	# user 到 每个tag的出现比例(分别在回答的和拒绝的中)
 	u2tags_ans_rate = {}
 	u2tags_ans_count = {}
 	u2tags_reject_rate = {}
 	u2tags_reject_count = {}
-	with open(data_folder + '1_reorder/invited_info_train.txt', 'r') as fp:
+	if kfolder == -1:
+		data_file = data_folder + '1_reorder/invited_info_train.txt'
+	else:
+		data_file = data_folder + '1_reorder/Folder%d/train.txt' % kfolder
+	with open(data_file, 'r') as fp:
 		for line in fp:
 			q, u, label = map(int, line.strip().split('\t'))
 			occupy = u2tags_ans_rate if label == 1 else u2tags_reject_rate
@@ -82,15 +91,26 @@ class TagsFeatureGenerator(FeatureGenerator):
 				tag_reject += self.u2tags_reject_rate[u][tag]
 		fea = [tag_match, tag_ans, tag_reject]
 		return fea
-# end StatFeatureGenerator
+# end TagsFeatureGenerator
+
+
+def gen_feature(kfolder=-1):
+	# 生成Feature
+	if kfolder != -1:
+		print 'current fit %d folder' % kfolder
+	qtags, utags = load_tags()
+	u2tags_ans_rate, u2tags_reject_rate = user2ans_tag(qtags, utags, kfolder=kfolder)
+	if kfolder != -1 and not os.path.exists('./feature/Folder%d' % kfolder):
+		os.makedirs('./feature/Folder%d' % kfolder)
+	g = TagsFeatureGenerator(qtags, utags, u2tags_ans_rate, u2tags_reject_rate)
+	feature_folder = './feature/' if kfolder == -1 else './feature/Folder%d/' % kfolder
+	print 'start generating feature for training data'
+	g.gen_feature_file(feature_folder, 'tags', train=True, xgboost=True, pkl=False, kfolder=kfolder)
+	print 'start generating feature for test data'
+	g.gen_feature_file(feature_folder, 'tags', train=False, xgboost=True, pkl=False, kfolder=kfolder)
+	print ''
 
 
 if __name__ == '__main__':
-	# 生成Feature
-	qtags, utags = load_tags()
-	u2tags_ans_rate, u2tags_reject_rate = user2ans_tag(qtags, utags)
-	g = TagsFeatureGenerator(qtags, utags, u2tags_ans_rate, u2tags_reject_rate)
-	print 'start generating feature for training data'
-	g.gen_feature_file('./feature/', 'tags', train=True, xgboost=True, pkl=True)
-	print 'start generating feature for test data'
-	g.gen_feature_file('./feature/', 'tags', train=False, xgboost=True, pkl=True)
+	for i in xrange(-1, 10):
+		gen_feature(i)

@@ -1,6 +1,18 @@
 # -*- coding: utf-8 -*-
 # 使用../data/stat.py统计的基本数字型特征
+#
+# Feature List:
+# int   - 问题的vote
+# int   - 问题的ans
+# int   - 问题的bestans
+# float - 回答问题的平均vote
+# float - 回答问题的平均ans
+# float - 回答问题的平均bestans
+# float - 不回答问题的平均vote
+# float - 不回答问题的平均ans
+# float - 不回答问题的平均bestans
 
+import os
 
 from feature_abstract import FeatureGenerator
 
@@ -29,11 +41,12 @@ def question():
 	return q2feature
 
 
-def user():
+def user(kfolder):
 	'''Load预先统计的用户信息'''
 	print 'load user'
+	fname = data_folder + 'stat/user_info%s.txt' % ('' if kfolder == -1 else ('_Folder' + str(kfolder)))
 	u2feature = {}
-	with open(data_folder + 'stat/user_info.txt', 'r') as fp:
+	with open(fname, 'r') as fp:
 		for line in fp:
 			items = map(float, line.strip().split('\t'))
 			u2feature[int(items[0])] = items[1:]
@@ -45,18 +58,45 @@ class StatFeatureGenerator(FeatureGenerator):
 	def __init__(self, q2feature, u2feature):
 		self.q2feature = q2feature
 		self.u2feature = u2feature
+		for i in xrange(100):
+			if i in q2feature:
+				self.qfeature_len = len(q2feature[i])
+				break
+		for i in xrange(100):
+			if i in u2feature:
+				self.ufeature_len = len(u2feature[i])
+				break
 
 	def gen_feauture(self, q, u):
-		fea = self.q2feature[q] + self.u2feature[u]
+		if q not in self.q2feature:
+			qfea = [0] * self.qfeature_len
+		else:
+			qfea = self.q2feature[q]
+		if u not in self.u2feature:
+			ufea = [0] * self.ufeature_len
+		else:
+			ufea = self.u2feature[u]
+		fea = qfea + ufea
 		return fea
 # end StatFeatureGenerator
 
 
-if __name__ == '__main__':
+def gen_feature(kfolder=-1):
+	if kfolder != -1:
+		print 'current fit %d folder' % kfolder
 	q2feature = question()
-	u2feature = user()
+	u2feature = user(kfolder)
 	g = StatFeatureGenerator(q2feature, u2feature)
+	prefix = 'stat' if kfolder == -1 else 'Folder%d/stat' % kfolder
+	if kfolder != -1 and not os.path.exists('./feature/Folder%d' % kfolder):
+		os.makedirs('./feature/Folder%d' % kfolder)
 	print 'start generating feature for training data'
-	g.gen_feature_file('./feature/', 'stat', train=True, xgboost=True, pkl=True)
+	g.gen_feature_file('./feature/', prefix, train=True, xgboost=True, pkl=False, kfolder=kfolder)
 	print 'start generating feature for test data'
-	g.gen_feature_file('./feature/', 'stat', train=False, xgboost=True, pkl=True)
+	g.gen_feature_file('./feature/', prefix, train=False, xgboost=True, pkl=False, kfolder=kfolder)
+	print ''
+
+
+if __name__ == '__main__':
+	for i in xrange(-1, 10):
+		gen_feature(i)
