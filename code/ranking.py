@@ -59,7 +59,7 @@ def normed_by_group(preds, groups):
 	return preds
 
 
-def submit(bst, dtest):
+def submit(bst, dtest, need_norm=False):
     # make prediction
     preds = bst.predict(dtest)
     print preds.shape
@@ -71,7 +71,8 @@ def submit(bst, dtest):
     			groups[qid].append(i)
     		else:
     			groups[qid] = [i]
-    preds = normed_by_group(preds, groups.values())
+    if need_norm:
+        preds = normed_by_group(preds, groups.values())
     with open('submit.csv', 'w') as fo:
         fo.write('qid,uid,label\n')
         with open('../data/0_raw/validate_nolabel.txt', 'r') as fp:
@@ -132,19 +133,20 @@ def gradsearch(feature_name='stat'):
 
 feature_prefix = '../feature/feature'
 # feature_name = 'stat'
-feature_name = 'merge.stat_tags'
-gradsearch(feature_name=feature_name)
+# feature_name = 'merge.stat_tags'
+feature_name = 'merge.stat_tags_ngram'
+# gradsearch(feature_name=feature_name)
 
 
-# params = {'min_child_weight': 1, 'max_depth': 3, 'eta': 0.1,
-#           'max_delta_step': 1, 'subsample': 0.7, 'colsample_bytree': 0.7}
-# params['scale_pos_weight'] = 1
-# params['silent'] = True
-# params['objective'] = 'reg:logistic'
-# # params['objective'] = 'rank:pairwise'
-# # params['objective'] = 'rank:ndcg'
-# params['eval_metric'] = ['ndcg@5-', 'ndcg@10-']
-# train_f = feature_prefix + '/Folder1/' + feature_name + '.train.xgboost.4rank.txt'
-# test_f = feature_prefix + '/' + feature_name + '.test.xgboost.txt'
-# bst, dtest = train(train_f, test_f, params, 1000, 100, evaluate=False)
-# submit(bst, dtest)
+params = {'min_child_weight': 1, 'max_depth': 3, 'eta': 0.1,
+          'max_delta_step': 1, 'subsample': 0.7, 'colsample_bytree': 0.7}
+params['scale_pos_weight'] = 1
+params['silent'] = True
+params['objective'] = 'reg:logistic'
+# params['objective'] = 'rank:pairwise'
+# params['objective'] = 'rank:ndcg'
+params['eval_metric'] = ['ndcg@5-', 'ndcg@10-']
+train_f = feature_prefix + '/Folder1/' + feature_name + '.train.xgboost.4rank.txt'
+test_f = feature_prefix + '/' + feature_name + '.test.xgboost.txt'
+bst, dtest = train(train_f, test_f, params, 1000, 100, evaluate=False)
+submit(bst, dtest)
