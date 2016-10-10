@@ -17,8 +17,18 @@ def cv(feature_prefix, feature_name, params, num_round=1000, early_stopping_roun
 	return vals
 
 
-def train():
-	pass
+def train(train_f, test_f, params, num_round, early_stopping_rounds, evaluate=False):
+    train_group_f = train_f.replace('.txt', '.txt.group')
+    dtrain = xgb.DMatrix(train_f)
+    dtest = xgb.DMatrix(test_f)
+    if evaluate:
+        watchlist = [(dtrain, 'train'), (dtest, 'valid')]
+    else:
+    	dval = xgb.DMatrix(train_f.replace('train', 'test'))
+        watchlist = [(dtrain, 'train'), (dval, 'valid')]
+    bst = xgb.train(params, dtrain, num_round, watchlist, obj=None,
+                    feval=None, early_stopping_rounds=early_stopping_rounds)
+    return bst, dtest if not evaluate else bst.eval(dtest)
 
 
 def submit(bst, dtest):
@@ -68,13 +78,21 @@ def gradsearch(feature_name='stat'):
 	fo.close()
 
 
-# params = {'min_child_weight': 5, 'max_depth': 3, 'eta': 0.1, 'max_delta_step': 5, 'subsample': 0.5, 'colsample_bytree': 1}
-# params['scale_pos_weight'] = 1
-# params['silent'] = True
-# params['objective'] = 'reg:logistic'
-# params['eval_metric'] = ['rmse']
 
+feature_prefix = '../feature/feature'
 # cv('../feature/feature', 'stat', params, num_round=1000, early_stopping_rounds=5, kfolder=10)
 # feature_name = 'stat'
-feature_name = 'merge.stat_tags'
-gradsearch(feature_name=feature_name)
+# feature_name = 'merge.stat_tags'
+feature_name = 'merge.stat_tags_ngram'
+# gradsearch(feature_name=feature_name)
+
+
+params = {'min_child_weight': 5, 'max_depth': 3, 'eta': 0.1, 'max_delta_step': 5, 'subsample': 0.5, 'colsample_bytree': 1}
+params['scale_pos_weight'] = 1
+params['silent'] = True
+params['objective'] = 'reg:logistic'
+params['eval_metric'] = ['rmse']
+train_f = feature_prefix + '/Folder1/' + feature_name + '.train.xgboost.txt'
+test_f = feature_prefix + '/' + feature_name + '.test.xgboost.txt'
+bst, dtest = train(train_f, test_f, params, 1000, 100, evaluate=False)
+submit(bst, dtest)
