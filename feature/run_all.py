@@ -17,6 +17,11 @@ cmd = "python ./feature_tags.py"
 print cmd
 os.system(cmd)
 
+# ngram about
+cmd = "python ./feature_ngram.py"
+print cmd
+os.system(cmd)
+
 
 #####################
 # Combine Feature and Format for Ranking
