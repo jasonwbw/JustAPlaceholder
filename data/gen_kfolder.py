@@ -74,7 +74,39 @@ def gen_kfolder_with_labelone_in_rank(fname, fo_prefix, k=10):
 		print 'Folder %d from %d' % (fold, len(sample4label_one))
 		choosen_q = set()
 		train, test = [], []
-		test_idxes = np.random.random_integers(0, len(sample4label_one) - 1, len(sample4label_one) * 2 / (k - 1))
+		backed_idxes = set()
+		# # move some question to test (as the total 8094 question have 386 just in test set)
+		# as just total 81 case (some just one) is unique, we just remove the items
+		count_just4test = 0
+		# test_move_idxes = np.random.random_integers(0, len(sample4label_one) - 1, count_just4test)
+		# for t in test_move_idxes:
+		# 	backed_idxes.add(t)
+		# 	count, total, q = sample4label_one[t]
+		# 	for i, u in enumerate(q2label_one[q]):
+		# 		test.append('%d\t%d\t1\n' % (q, u))
+		# 	if q in q2label_zero:
+		# 		for i, u in enumerate(q2label_zero[q]):
+		# 			test.append('%d\t%d\t0\n' % (q, u))
+		# 	choosen_q.add(q)
+		# move some question to test (as the total 8094 question have 2410 just in test set)
+		train_move_idxes = np.random.random_integers(0, len(sample4label_one) - 1, 2298 + count_just4test)
+		choosed = 0
+		for t in train_move_idxes:
+			choosed += 1
+			if choosed > 2298:
+				break
+			count, total, q = sample4label_one[t]
+			if q in choosen_q:
+				continue
+			backed_idxes.add(t)
+			for i, u in enumerate(q2label_one[q]):
+				train.append('%d\t%d\t1\n' % (q, u))
+			if q in q2label_zero:
+				for i, u in enumerate(q2label_zero[q]):
+					train.append('%d\t%d\t0\n' % (q, u))
+			choosen_q.add(q)
+		# choose some with random choose same label_one rate to test
+		test_idxes = np.random.random_integers(0, len(sample4label_one) - 1, (len(sample4label_one) - 2298 - count_just4test) * 3 / k)
 		for t in test_idxes:
 			count, total, q = sample4label_one[t]
 			if count + 5 >= max_count:
@@ -98,6 +130,7 @@ def gen_kfolder_with_labelone_in_rank(fname, fo_prefix, k=10):
 				q = sample4label_one[idx][2]
 			if c4out >= 30:
 				continue
+			backed_idxes.add(idx)
 			choosen_q.add(q)
 			if new_count > 0:
 				us = set(np.random.choice(new_count, count))
@@ -113,6 +146,16 @@ def gen_kfolder_with_labelone_in_rank(fname, fo_prefix, k=10):
 					test.append('%d\t%d\t0\n' % (q, u))
 				else:
 					train.append('%d\t%d\t0\n' % (q, u))
+		# lefted
+		for t in xrange(len(sample4label_one)):
+			if t in backed_idxes:
+				continue
+			count, total, q = sample4label_one[t]
+			for i, u in enumerate(q2label_one[q]):
+				train.append('%d\t%d\t1\n' % (q, u))
+			if q in q2label_zero:
+				for i, u in enumerate(q2label_zero[q]):
+					train.append('%d\t%d\t0\n' % (q, u))
 		print len(train)
 		print len(test)
 		if not os.path.exists(fo_prefix + 'Folder%d' % fold):
@@ -124,24 +167,6 @@ def gen_kfolder_with_labelone_in_rank(fname, fo_prefix, k=10):
 			for s in test:
 				fo.write(s)
 		print ''
-	# random_seed = 2016;
-	# skf = StratifiedKFold(labels, n_folds=k,
-	# 	shuffle=True, random_state=random_seed)
-	# for fold, (trainInd, validInd) in enumerate(skf):
-	# 	print("================================")
-	# 	print("Index for run: %s, fold: %s" % (0, fold + 1))
-	# 	print("Train (num = %s)" % len(trainInd))
-	# 	print(trainInd[:10])
-	# 	print("Valid (num = %s)" % len(validInd))
-	# 	print(validInd[:10])
-	# 	if not os.path.exists(fo_prefix + 'Folder%d' % fold):
-	# 		os.makedirs(fo_prefix + 'Folder%d' % fold)
-	# 	with open(fo_prefix + 'Folder%d/train.txt' % fold, 'w') as fo:
-	# 		for idx in trainInd:
-	# 			fo.write(samples[idx])
-	# 	with open(fo_prefix + 'Folder%d/val.txt' % fold, 'w') as fo:
-	# 		for idx in validInd:
-	# 			fo.write(samples[idx])
 
 if __name__ == '__main__':
     # gen_kfolder('./1_reorder/invited_info_train.txt', './1_reorder/', k=config.kfolder)
