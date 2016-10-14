@@ -81,7 +81,7 @@ def submit(bst, dtest, need_norm=False):
                          ',' + str(preds[i]) + '\n')
 
 
-def gradsearch(feature_name='stat'):
+def gradsearch(feature_name='stat', kfolder=8, num_round=1000, early_stopping_rounds=20):
     fo = open('gradsearch.%s.rs.txt' % feature_name, 'w')
     min_child_weights = [1, 2, 5]
     max_depths = [2, 3, 4, 5]
@@ -90,9 +90,12 @@ def gradsearch(feature_name='stat'):
     subsamples = [0.5, 0.7, 1]
     colsample_bytrees = [0.5, 0.7, 1]
     scale_pos_weights = [1, 5, 10]
+    tmp_len = len(etas) * len(max_delta_steps) * len(subsamples) * len(colsample_bytrees) * len(scale_pos_weights)
+    tmp_total_len = tmp_len * len(min_child_weights) * len(max_depths)
     best_result = (0, )
     for m1 in min_child_weights:
         for m2 in max_depths:
+            fo.write('%d passed of %d\n\n' % (tmp_len * m2 * m1, tmp_total_len))
             for eta in etas:
                 for m3 in max_delta_steps:
                     for subsample in subsamples:
@@ -112,7 +115,7 @@ def gradsearch(feature_name='stat'):
                                 # params['objective'] = 'rank:ndcg'
                                 params['eval_metric'] = ['ndcg@5-', 'ndcg@10-']
                                 evals = cv('../feature/feature', feature_name, params,
-                                           num_round=1000, early_stopping_rounds=50, kfolder=10)
+                                           num_round=num_round, early_stopping_rounds=early_stopping_rounds, kfolder=kfolder)
                                 metrics = 0.
                                 for eva in evals:
                                     eva_tmp = eva.split('eval-ndcg@', 2)
@@ -132,21 +135,21 @@ def gradsearch(feature_name='stat'):
 
 
 feature_prefix = '../feature/feature'
-# feature_name = 'stat'
+feature_name = 'stat'
 # feature_name = 'merge.stat_tags'
-feature_name = 'merge.stat_tags_ngram'
-# gradsearch(feature_name=feature_name)
+# feature_name = 'merge.stat_tags_ngram'
+gradsearch(feature_name=feature_name, kfolder=3)
 
 
-params = {'min_child_weight': 1, 'max_depth': 3, 'eta': 0.1,
-          'max_delta_step': 1, 'subsample': 0.7, 'colsample_bytree': 0.7}
-params['scale_pos_weight'] = 1
-params['silent'] = True
-params['objective'] = 'reg:logistic'
-# params['objective'] = 'rank:pairwise'
-# params['objective'] = 'rank:ndcg'
-params['eval_metric'] = ['ndcg@5-', 'ndcg@10-']
-train_f = feature_prefix + '/Folder1/' + feature_name + '.train.xgboost.4rank.txt'
-test_f = feature_prefix + '/' + feature_name + '.test.xgboost.txt'
-bst, dtest = train(train_f, test_f, params, 1000, 100, evaluate=False)
-submit(bst, dtest)
+# params = {'min_child_weight': 1, 'max_depth': 3, 'eta': 0.01,
+#           'max_delta_step': 1, 'subsample': 0.7, 'colsample_bytree': 0.7}
+# params['scale_pos_weight'] = 1
+# params['silent'] = True
+# params['objective'] = 'binary:logistic'
+# # params['objective'] = 'rank:pairwise'
+# # params['objective'] = 'rank:ndcg'
+# params['eval_metric'] = ['ndcg@5-', 'ndcg@10-']
+# train_f = feature_prefix + '/Folder1/' + feature_name + '.train.xgboost.4rank.txt'
+# test_f = feature_prefix + '/' + feature_name + '.test.xgboost.txt'
+# bst, dtest = train(train_f, test_f, params, 1000, 100, evaluate=False)
+# submit(bst, dtest)
