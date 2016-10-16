@@ -132,8 +132,89 @@ def try_tag_relevant():
 #    Feature维度不多，也许而已直接把tag的onehot作为feature
 
 
+def _try_q2tag(target_label):
+    qtags, utags = load_tags()
+    # 回答过的tag分布
+    q2utags = {}
+    u2qtags = {}
+    # 回答的次数
+    q2count = {}
+    u2count = {}
+    with open('./1_reorder/invited_info_train.txt', 'r') as fp:
+        for line in fp:
+            q, u, label = map(int, line.strip().split('\t'))
+            if label != target_label:
+            	continue
+            if q not in q2utags:
+            	q2utags[q] = Counter()
+            	q2count[q] = 0
+            if u not in u2qtags:
+            	u2qtags[u] = Counter()
+            	u2count[u] = 0
+            q2count[q] += 1
+            u2count[u] += 1
+            for qt in qtags[q]:
+            	u2qtags[u][qt] += 1
+            for ut in utags[u]:
+            	q2utags[q][ut] += 1
+    fo = open('./1_reorder/q2utags.%d.txt' % target_label, 'w')
+    for q, c in q2utags.items():
+    	fo.write('%d %d\n' % (q, int(q2count[q])))
+    	fo.write('%s\n\n' % ', '.join(['%d %d %s' % (key, value, '%.2f' % (float(value) / q2count[q])) for key, value in c.most_common(10)]))
+    fo.close()
+    fo = open('./1_reorder/u2qtags.%d.txt' % target_label, 'w')
+    for u, c in u2qtags.items():
+    	fo.write('%d %d\n' % (u, int(u2count[u])))
+    	fo.write('%s\n\n' % ', '.join(['%d %d %s' % (key, value, '%.2f' % (float(value) / u2count[u])) for key, value in c.most_common(10)]))
+    fo.close()
+
+
+def _try_q2tag_merge(f1, f2, f):
+	q2count = {}
+	q2infos = {}
+	with open(f1, 'r') as fp1:
+		for i, line in enumerate(fp1):
+			if i % 3 == 0:
+				q, c = line.strip().split(' ')
+				q = int(q)
+				q2count[q] = c
+			elif i % 3 == 1:
+				q2infos[q] = line.strip()
+	with open(f2, 'r') as fp2:
+		for i, line in enumerate(fp2):
+			if i % 3 == 0:
+				q, c = line.strip().split(' ')
+				q = int(q)
+				if q in q2count:
+					q2count[q] += ' ' + c
+				else:
+					q2count[q] = ('0 ') + c
+			elif i % 3 == 1:
+				if q in q2infos:
+					q2infos[q] += '\n' + line.strip()
+				else:
+					q2infos[q] = '\n' + line.strip()
+	with open(f, 'w') as fo:
+		for q in sorted(q2count.keys()):
+			if q2count[q].count(' ') == 0:
+				q2count[q] += ' 0'
+				q2infos[q] += '\n'
+			fo.write('%d %s\n' % (q, q2count[q]))
+			fo.write(q2infos[q] + '\n\n')
+
+
+def try_q2tag():
+    '''统计一下User有没有倾向回答哪些tag的question，question的回答者有没有什么tag的倾向'''
+    print '统计User有没有倾向回答哪些tag的question，question的回答者有没有什么tag的倾向'
+    _try_q2tag(0)
+    _try_q2tag(1)
+    _try_q2tag_merge('./1_reorder/q2utags.0.txt', './1_reorder/q2utags.1.txt', './1_reorder/q2utags.txt')
+    _try_q2tag_merge('./1_reorder/u2qtags.0.txt', './1_reorder/u2qtags.1.txt', './1_reorder/u2qtags.txt')
+# end
+
+
 if __name__ == '__main__':
 	# try_basic_infos()
     # try_tag_matching()
     # try_tag_relevant()
-    # try_q2tag()
+    try_q2tag()
