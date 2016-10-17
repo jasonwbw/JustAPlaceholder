@@ -125,7 +125,7 @@ def try_tag_relevant():
 #    对于qtag，推送到的utag基本比较固定，所以回答的和拒绝的基本分布差不多。
 #    除去个别tag可能稍有差别，这部分应该是更有用的。
 # 2. [Feature]
-#    根据第一条发现，输出了utag 回答/推送到次数 的比率，来观察一下top的tag
+#    根据第一条发现，对每个qtag，输出了utag 回答/推送到次数 的比率，来观察一下top的tag
 #    并针对总推送次数低的排名靠前的问题，剔除了回答少于5次的
 #    这个也许可以作为一个feature
 # 3. [Feature]
@@ -157,12 +157,12 @@ def _try_q2tag(target_label):
             	u2qtags[u][qt] += 1
             for ut in utags[u]:
             	q2utags[q][ut] += 1
-    fo = open('./1_reorder/q2utags.%d.txt' % target_label, 'w')
+    fo = open('./stat/q2utags.%d.txt' % target_label, 'w')
     for q, c in q2utags.items():
     	fo.write('%d %d\n' % (q, int(q2count[q])))
     	fo.write('%s\n\n' % ', '.join(['%d %d %s' % (key, value, '%.2f' % (float(value) / q2count[q])) for key, value in c.most_common(10)]))
     fo.close()
-    fo = open('./1_reorder/u2qtags.%d.txt' % target_label, 'w')
+    fo = open('./stat/u2qtags.%d.txt' % target_label, 'w')
     for u, c in u2qtags.items():
     	fo.write('%d %d\n' % (u, int(u2count[u])))
     	fo.write('%s\n\n' % ', '.join(['%d %d %s' % (key, value, '%.2f' % (float(value) / u2count[u])) for key, value in c.most_common(10)]))
@@ -208,13 +208,46 @@ def try_q2tag():
     print '统计User有没有倾向回答哪些tag的question，question的回答者有没有什么tag的倾向'
     _try_q2tag(0)
     _try_q2tag(1)
-    _try_q2tag_merge('./1_reorder/q2utags.0.txt', './1_reorder/q2utags.1.txt', './1_reorder/q2utags.txt')
-    _try_q2tag_merge('./1_reorder/u2qtags.0.txt', './1_reorder/u2qtags.1.txt', './1_reorder/u2qtags.txt')
+    _try_q2tag_merge('./stat/q2utags.0.txt', './stat/q2utags.1.txt', './stat/q2utags.txt')
+    _try_q2tag_merge('./stat/u2qtags.0.txt', './stat/u2qtags.1.txt', './stat/u2qtags.txt')
 # end
+#
+# 结果:
+# 1. 热门tag，很多情况下拒绝和回答的tag一致，基本上拒绝远多于回答
+# 2. [feature] 也许可以针对u，统计一下qtag 推送/回答的比率（推送大于5次的话）
+
+
+def try_u2qtag():
+    '''根据try_q2tag，统计一下u对每个qtag回答的比率'''
+    qtags, utags = load_tags()
+    u2qtags = {}
+    u2qtags_ans = {}
+    with open('./1_reorder/invited_info_train.txt', 'r') as fp:
+        for line in fp:
+            q, u, label = map(int, line.strip().split('\t'))
+            if u not in u2qtags:
+                u2qtags[u] = Counter()
+                u2qtags_ans[u] = Counter()
+            q_tag = list(qtags[q])[0]
+            u2qtags[u][q_tag] += 1
+            if label == 1:
+                u2qtags_ans[u][q_tag] += 1
+    fo = open('./stat/u2qtags.merge.txt', 'w')
+    for u in u2qtags:
+        qs = {}
+        for q_tag in u2qtags[u].keys():
+            if u2qtags[u][q_tag] >= 3:
+                # print q_tag, u2qtags[u][q_tag]
+                qs[q_tag] = (float(u2qtags_ans[u][q_tag]) / u2qtags[u][q_tag], u2qtags[u][q_tag])
+        qs = sorted(qs.items(), key=lambda x: x[1][0], reverse=True)
+        fo.write('%d\n' % (u))
+        fo.write('%s\n\n' % ', '.join(['%d %s %d' % (key, '%.2f' % (value[0]), value[1]) for key, value in qs]))
+    fo.close()
 
 
 if __name__ == '__main__':
 	# try_basic_infos()
     # try_tag_matching()
     # try_tag_relevant()
-    try_q2tag()
+    # try_q2tag()
+    try_u2qtag()
