@@ -12,6 +12,10 @@ from feature_abstract import FeatureGenerator
 
 from itertools import izip
 
+from collections import Counter
+
+import numpy as np
+
 data_folder = '../data/'
 
 
@@ -77,10 +81,40 @@ def user2ans_tag(qtags, utags, kfolder=-1):
     return u2tags_ans_rate, u2tags_reject_rate, u2tags_ans_count, u2tags_reject_count
 
 
+def load_qtag2utag(qtags, utags, kfolder=-1):
+    '''对每个qtag，输出了utag 回答/推送到次数 的比率, 剔除了回答少于5次的'''
+    if kfolder == -1:
+        data_file = data_folder + '1_reorder/invited_info_train.txt'
+    else:
+        data_file = data_folder + '1_reorder/Folder%d/train.txt' % kfolder
+    qt2ut_ansed = {}
+    qt2ut_count = {}
+    with open(data_file, 'r') as fp:
+        for line in fp:
+            q, u, label = map(int, line.strip().split('\t'))
+            for qt in qtags[q]:
+                if qt not in qt2ut_ansed:
+                    qt2ut_ansed[qt] = Counter()
+                    qt2ut_count[qt] = Counter()
+                for ut in utags[u]:
+                    if label == 1:
+                        qt2ut_ansed[qt][ut] += 1
+                    qt2ut_count[qt][ut] += 1
+    qtag2utag = {}
+    for qt in qt2ut_ansed:
+        qtag2utag[qt] = {}
+        for ut, ans_count in qt2ut_ansed[qt].items():
+            if ans_count >= 5:
+                qtag2utag[qt][ut] = float(ans_count) / qt2ut_count[qt][ut]
+    return qtag2utag
+
+
 class TagsFeatureGenerator(FeatureGenerator):
 
-    def __init__(self, qtags, utags, u2tags_ans_rate, u2tags_reject_rate,
-    	u2tags_ans_count, u2tags_reject_count, qtag_size, utag_size, feature_choosen=[False, False, False, True]):
+    def __init__(self, qtags, utags, qtag_size, utag_size,
+                 u2tags_ans_rate, u2tags_reject_rate,
+                 u2tags_ans_count, u2tags_reject_count, qtag2utag,
+                 feature_choosen=[False, False, False, False, True]):
         self.qtags = qtags
         self.utags = utags
         self.u2tags_ans_rate = u2tags_ans_rate
@@ -90,12 +124,15 @@ class TagsFeatureGenerator(FeatureGenerator):
         self.feature_choosen = feature_choosen
         self.qtag_size = qtag_size
         self.utag_size = utag_size
+        self.qtag2utag = qtag2utag
 
     def gen_feauture(self, q, u):
         # [抛弃][发现tag不是一个体系]
         # tag 是不是完全match
         tag_match = 0
+        ptag = 0
         for tag in self.qtags[q]:
+            ptag = tag
             if tag in self.utags[u]:
                 tag_match = 1
                 break
@@ -127,12 +164,21 @@ class TagsFeatureGenerator(FeatureGenerator):
             f4[tag] = 1
         for tag in self.utags[u]:
             f4[tag + self.qtag_size] = 1
+        # 对每个qtag，输出了utag 回答/推送到次数 的比率
+        probs = []
+        for utag in self.utags[u]:
+            if utag in self.qtag2utag[ptag]:
+                probs.append(self.qtag2utag[ptag][utag])
+        if len(probs) == 0:
+            f5 = [0, 0]
+        else:
+            f5 = [max(probs), np.mean(probs)]
         # combine
-        candidates = [f1, f2, f3, f4]
+        candidates = [f1, f2, f3, f4, f5]
         fea = []
         for f, chosen in izip(candidates, self.feature_choosen):
-        	if chosen:
-        		fea += f
+            if chosen:
+                fea += f
         return fea
 # end TagsFeatureGenerator
 
@@ -141,14 +187,15 @@ def gen_feature(kfolder=-1):
     # 生成Feature
     if kfolder != -1:
         print 'current fit %d folder' % kfolder
+    # preload info
     qtags, utags, qtag_size, utag_size = load_tags()
     u2tags_ans_rate, u2tags_reject_rate, u2tags_ans_count, u2tags_reject_count = user2ans_tag(
         qtags, utags, kfolder=kfolder)
+    qtag2utag = load_qtag2utag(qtags, utags, kfolder=kfolder)
     if kfolder != -1 and not os.path.exists('./feature/Folder%d' % kfolder):
         os.makedirs('./feature/Folder%d' % kfolder)
-    g = TagsFeatureGenerator(qtags, utags, u2tags_ans_rate,
-                             u2tags_reject_rate, u2tags_ans_count, u2tags_reject_count,
-                             qtag_size, utag_size)
+    g = TagsFeatureGenerator(qtags, utags, qtag_size, utag_size,
+                             u2tags_ans_rate, u2tags_reject_rate, u2tags_ans_count, u2tags_reject_count, qtag2utag)
     feature_folder = './feature/' if kfolder == - \
         1 else './feature/Folder%d/' % kfolder
     print 'start generating feature for training data'
