@@ -3,6 +3,8 @@
 import numpy as np
 import xgboost as xgb
 
+import random
+
 
 def evalerror(preds, dtrain):
     labels = dtrain.get_label()
@@ -93,14 +95,16 @@ def gradsearch(feature_name='stat', kfolder=8, num_round=1000, early_stopping_ro
     tmp_len = len(etas) * len(max_delta_steps) * len(subsamples) * len(colsample_bytrees) * len(scale_pos_weights)
     tmp_total_len = tmp_len * len(min_child_weights) * len(max_depths)
     best_result = (0, )
-    for m1 in min_child_weights:
-        for m2 in max_depths:
-            fo.write('%d passed of %d\n\n' % (tmp_len * m2 * m1, tmp_total_len))
+    for i, m1 in enumerate(min_child_weights):
+        for j, m2 in enumerate(max_depths):
+            fo.write('%d passed of %d\n\n' % (tmp_len * i * len(max_depths) + tmp_len * j, tmp_total_len))
             for eta in etas:
                 for m3 in max_delta_steps:
                     for subsample in subsamples:
                         for colsample_bytree in colsample_bytrees:
                             for w in scale_pos_weights:
+                                if random.randint(0, 9) != 0:
+                                    continue
                                 params = {}
                                 params['min_child_weight'] = m1
                                 params['max_depth'] = m2
@@ -135,15 +139,15 @@ def gradsearch(feature_name='stat', kfolder=8, num_round=1000, early_stopping_ro
 
 
 feature_prefix = '../feature/feature'
-feature_name = 'stat'
-# feature_name = 'merge.stat_tags'
+# feature_name = 'stat'
+feature_name = 'merge.stat_tags'
 # feature_name = 'merge.stat_tags_ngram'
 gradsearch(feature_name=feature_name, kfolder=3)
 
 
-# params = {'min_child_weight': 1, 'max_depth': 3, 'eta': 0.01,
-#           'max_delta_step': 1, 'subsample': 0.7, 'colsample_bytree': 0.7}
-# params['scale_pos_weight'] = 1
+# params = {'min_child_weight': 1, 'max_depth': 2, 'eta': 0.1,
+#           'max_delta_step': 0, 'subsample': 0.7, 'colsample_bytree': 1}
+# params['scale_pos_weight'] = 5
 # params['silent'] = True
 # params['objective'] = 'binary:logistic'
 # # params['objective'] = 'rank:pairwise'
