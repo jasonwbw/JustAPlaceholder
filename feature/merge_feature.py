@@ -48,7 +48,8 @@ def merge_xgboost_feature(file_prefixs, file_merge_prefix):
 
 if __name__ == '__main__':
 	# merge stat and tags
-	featurenames = ['stat', 'tags', 'ngram']
+	featurenames = ['stat', 'tags']
+	# featurenames = ['stat', 'tags', 'ngram']
 	merged_name = 'merge.%s.' % '_'.join(featurenames)
 	merge_xgboost_feature(['./feature/%s.' % f for f in featurenames], './feature/%s' % merged_name)
 	for i in xrange(config.kfolder):

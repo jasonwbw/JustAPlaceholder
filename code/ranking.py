@@ -5,6 +5,8 @@ import xgboost as xgb
 
 import random
 
+from itertools import izip
+
 
 def evalerror(preds, dtrain):
     labels = dtrain.get_label()
@@ -26,7 +28,7 @@ def cv(feature_prefix, feature_name, params, num_round=1000, early_stopping_roun
     return vals
 
 
-def train(train_f, test_f, params, num_round, early_stopping_rounds, evaluate=False):
+def train(train_f, test_f, params, num_round, early_stopping_rounds, evaluate=False, eval_f=None):
     train_group_f = train_f.replace('.txt', '.txt.group')
     dtrain = xgb.DMatrix(train_f)
     dtest = xgb.DMatrix(test_f)
@@ -35,8 +37,9 @@ def train(train_f, test_f, params, num_round, early_stopping_rounds, evaluate=Fa
         test_group_f = test_f.replace('.txt', '.txt.group')
         dtest.set_group(np.loadtxt(test_group_f).astype(int))
     else:
-    	dval = xgb.DMatrix(train_f.replace('train', 'test'))
-    	dval.set_group(np.loadtxt(train_group_f.replace('train', 'test')).astype(int))
+        test_group_f = eval_f.replace('.txt', '.txt.group')
+    	dval = xgb.DMatrix(eval_f)
+    	dval.set_group(np.loadtxt(test_group_f).astype(int))
     if evaluate:
         watchlist = [(dtrain, 'train'), (dtest, 'valid')]
     else:
@@ -61,7 +64,7 @@ def normed_by_group(preds, groups):
 	return preds
 
 
-def submit(bst, dtest, need_norm=False):
+def submit(bst, dtest, need_norm=False, kfolder=-1):
     # make prediction
     preds = bst.predict(dtest)
     print preds.shape
@@ -75,12 +78,34 @@ def submit(bst, dtest, need_norm=False):
     			groups[qid] = [i]
     if need_norm:
         preds = normed_by_group(preds, groups.values())
-    with open('submit.csv', 'w') as fo:
+    fname = './submit/submit%d.csv' % kfolder if kfolder != -1 else './submit/submit.csv'
+    with open(fname, 'w') as fo:
         fo.write('qid,uid,label\n')
         with open('../data/0_raw/validate_nolabel.txt', 'r') as fp:
             for i, line in enumerate(fp):
                 fo.write(line.strip().replace('\t', ',') +
                          ',' + str(preds[i]) + '\n')
+
+
+def submit_merge(kfolder):
+    data_infos = []
+    datas = []
+    for k in xrange(kfolder):
+        fname = './submit/submit%d.csv' % k
+        with open(fname, 'r') as fp:
+            for i, line in enumerate(fp):
+                if i == 0:
+                    continue
+                q, u, label = line.strip().split(',')
+                if k == 0:
+                    data_infos.append('%s,%s' % (q, u))
+                    datas.append([float(label)])
+                else:
+                    datas[i-1].append(float(label))
+    with open('./submit/submit.csv', 'w') as fo:
+        fo.write('qid,uid,label\n')
+        for info, labels in izip(data_infos, datas):
+            fo.write(info + ',' + str(np.mean(labels)) + '\n')
 
 
 def gradsearch(feature_name='stat', kfolder=8, num_round=1000, early_stopping_rounds=20):
@@ -139,21 +164,25 @@ def gradsearch(feature_name='stat', kfolder=8, num_round=1000, early_stopping_ro
 
 
 feature_prefix = '../feature/feature'
-# feature_name = 'stat'
-feature_name = 'merge.stat_tags'
+feature_name = 'stat'
+# feature_name = 'merge.stat_tags'
 # feature_name = 'merge.stat_tags_ngram'
-gradsearch(feature_name=feature_name, kfolder=3)
+# gradsearch(feature_name=feature_name, kfolder=3)
 
 
-# params = {'min_child_weight': 1, 'max_depth': 2, 'eta': 0.1,
-#           'max_delta_step': 0, 'subsample': 0.7, 'colsample_bytree': 1}
-# params['scale_pos_weight'] = 5
-# params['silent'] = True
-# params['objective'] = 'binary:logistic'
-# # params['objective'] = 'rank:pairwise'
-# # params['objective'] = 'rank:ndcg'
-# params['eval_metric'] = ['ndcg@5-', 'ndcg@10-']
-# train_f = feature_prefix + '/Folder1/' + feature_name + '.train.xgboost.4rank.txt'
-# test_f = feature_prefix + '/' + feature_name + '.test.xgboost.txt'
-# bst, dtest = train(train_f, test_f, params, 1000, 100, evaluate=False)
-# submit(bst, dtest)
+params = {'min_child_weight': 5, 'max_depth': 3, 'eta': 0.1,
+          'max_delta_step': 5, 'subsample': 0.5, 'colsample_bytree': 1}
+params['scale_pos_weight'] = 1
+params['silent'] = True
+params['objective'] = 'binary:logistic'
+# params['objective'] = 'rank:pairwise'
+# params['objective'] = 'rank:ndcg'
+params['eval_metric'] = ['ndcg@5-', 'ndcg@10-']
+kfolder = 8
+for i in xrange(kfolder):
+    train_f = feature_prefix + '/Folder%d/' % i + feature_name + '.train.xgboost.4rank.txt'
+    test_f = feature_prefix + '/' + feature_name + '.test.xgboost.txt'
+    eval_f = feature_prefix + '/Folder%d/' % i + feature_name + '.test.xgboost.4rank.txt'
+    bst, dtest = train(train_f, test_f, params, 1000, 100, evaluate=False, eval_f=eval_f)
+    submit(bst, dtest, kfolder=i)
+submit_merge(kfolder)

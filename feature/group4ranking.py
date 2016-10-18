@@ -78,7 +78,8 @@ def group_data(featurename, kfolder=-1, filter4rankloss=True):
 
 if __name__ == '__main__':
     # merge stat and tags
-    featurename = 'stat'
+    # featurename = 'stat'
+    featurename = 'merge.stat_tags'
     # featurename = 'merge.stat_tags_ngram'
     group_data(featurename, filter4rankloss=False, kfolder=-1)
     for i in xrange(config.kfolder):
