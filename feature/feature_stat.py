@@ -12,6 +12,8 @@
 import os
 import config
 
+from collections import Counter
+
 from feature_abstract import FeatureGenerator
 
 data_folder = '../data/'
@@ -28,7 +30,7 @@ def question_load_scores(fname, q2feature):
 	return q2feature
 
 
-def question():
+def question(kfolder=-1):
 	'''Load预先统计的问题信息'''
 	print 'load question'
 	q2feature = {}
@@ -36,6 +38,28 @@ def question():
 		for line in fp:
 			items = map(float, line.strip().split('\t'))
 			q2feature[int(items[0])] = items[1:]
+	return question_extend(kfolder, q2feature)
+
+
+def question_extend(kfolder, q2feature):
+	'''question的 回答个数-推送回答个数，推送回答个数，回答率'''
+	if kfolder == -1:
+		data_file = data_folder + '1_reorder/invited_info_train.txt'
+	else:
+		data_file = data_folder + '1_reorder/Folder%d/train.txt' % kfolder
+	q2count = Counter()
+	q2ans = Counter()
+	with open(data_file, 'r') as fp:
+		for line in fp:
+			q, u, label = map(int, line.strip().split('\t'))
+			q2count[q] += 1
+			if label == 1:
+				q2ans[q] += 1
+	for q in q2feature:
+		if q in q2count:
+			q2feature[q] += [q2feature[q][1] - q2ans[q], q2ans[q], q2ans[q] / float(q2count[q])]
+		else:
+			q2feature[q] += [q2feature[q][1], 0, 0]
 	return q2feature
 
 
@@ -82,7 +106,7 @@ class StatFeatureGenerator(FeatureGenerator):
 def gen_feature(kfolder=-1):
 	if kfolder != -1:
 		print 'current fit %d folder' % kfolder
-	q2feature = question()
+	q2feature = question(kfolder)
 	u2feature = user(kfolder)
 	g = StatFeatureGenerator(q2feature, u2feature)
 	prefix = 'stat' if kfolder == -1 else 'Folder%d/stat' % kfolder
