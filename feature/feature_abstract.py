@@ -42,9 +42,9 @@ class FeatureGenerator:
 				if train or kfolder != -1:
 					labels.append(label)
 					if xgboost:
-						fo_4xgboost.write(str(label) + ' ' + ' '.join([str(i) + ':' + str(f) for i, f in enumerate(fea)]) + '\n')
+						fo_4xgboost.write(str(label) + ' ' + ' '.join([str(i) + ':' + str(f) for i, f in enumerate(fea) if f != 0]) + '\n')
 				elif xgboost:
-					fo_4xgboost.write('0 ' + ' '.join([str(i) + ':' + str(f) for i, f in enumerate(fea)]) + '\n')
+					fo_4xgboost.write('0 ' + ' '.join([str(i) + ':' + str(f) for i, f in enumerate(fea) if f != 0]) + '\n')
 		if xgboost:
 			fo_4xgboost.close()
 		if pkl:

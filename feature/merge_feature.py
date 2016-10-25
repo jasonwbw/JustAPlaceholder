@@ -13,12 +13,12 @@ def load_xgboost_feature_file(fname, max_feature=0, current_features=None, need_
 			items = line.strip().split()
 			if need_label:
 				labels.append(items[0])
+			if current_features is None:
+				features.append([])
 			for j, item in enumerate(items[1:]):
 				idx, value = item.split(':')
 				idx = int(idx)
 				new_max_feature = max(new_max_feature, idx)
-				if current_features is None and j == 0:
-					features.append([])
 				features[i].append((str(idx + max_feature), value))
 	return features, labels, new_max_feature + max_feature
 
@@ -41,6 +41,7 @@ def merge_xgboost_feature(file_prefixs, file_merge_prefix):
 		else:
 			current_features, x, max_feature = load_xgboost_feature_file(file_prefix + 'train.xgboost.txt', max_feature=max_feature, current_features=current_features)
 			current_features_test, x_test, max_feature_test = load_xgboost_feature_file(file_prefix + 'test.xgboost.txt', max_feature=max_feature_test, current_features=current_features_test)
+		print '\t%dth max feature is %d, %d' % (i, max_feature, max_feature_test)
 	back_xgboost_feature(current_features, labels, file_merge_prefix + 'train.xgboost.txt')
 	back_xgboost_feature(current_features_test, labels_test, file_merge_prefix + 'test.xgboost.txt')
 	print ''
