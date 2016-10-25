@@ -3,11 +3,12 @@
 #
 # Feature List:
 # [Query about]
-# 00-02 - 问题的 [vote/ans/bestans]
+# 问题的 [vote/ans/bestans]
+# 回答个数-推送回答个数，推送回答个数，回答率
 # [User about]
-# 03-06 - 回答问题的 [平均/最大/最小/方差] [vote/ans/bestans]
-# 07-10 - 拒绝问题的 [平均/最大/最小/方差] [vote/ans/bestans]
-# 11-12 - 回答率, 已经回答的个数
+# 回答问题的 [平均/最大/最小/方差] [vote/ans/bestans]
+# 拒绝问题的 [平均/最大/最小/方差] [vote/ans/bestans]
+# 回答率, 已经回答的个数
 
 import os
 import config
